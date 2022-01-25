@@ -55,7 +55,7 @@
 #include "esp_intr.h"
 #endif
 
-#ifndef CONFIG_IDF_TARGET_ESP32S3
+//#ifndef CONFIG_IDF_TARGET_ESP32S3
 
 struct spi_struct_t {
     spi_dev_t * dev;
@@ -615,7 +615,7 @@ static void _on_apb_change(void * arg, apb_change_ev_t ev_type, uint32_t old_apb
 
 static void spiInitBus(spi_t * spi)
 {
-#ifndef CONFIG_IDF_TARGET_ESP32C3
+#if !defined CONFIG_IDF_TARGET_ESP32C3 &&  !defined CONFIG_IDF_TARGET_ESP32S3
     spi->dev->slave.trans_done = 0;
 #endif
     spi->dev->slave.val = 0;
@@ -627,7 +627,7 @@ static void spiInitBus(spi_t * spi)
     spi->dev->user.val = 0;
     spi->dev->user1.val = 0;
     spi->dev->ctrl.val = 0;
-#ifndef CONFIG_IDF_TARGET_ESP32C3
+#if !defined CONFIG_IDF_TARGET_ESP32C3 &&  !defined CONFIG_IDF_TARGET_ESP32S3
     spi->dev->ctrl1.val = 0;
     spi->dev->ctrl2.val = 0;
 #else
@@ -669,7 +669,7 @@ spi_t * spiStartBus(uint8_t spi_num, uint32_t clockDiv, uint8_t dataMode, uint8_
     }
 #endif
 
-#if CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
+#if CONFIG_IDF_TARGET_ESP32S2
     if(spi_num == FSPI) {
         DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI2_CLK_EN);
         DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_SPI2_RST);
@@ -679,6 +679,19 @@ spi_t * spiStartBus(uint8_t spi_num, uint32_t clockDiv, uint8_t dataMode, uint8_
     } else {
         DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_SPI01_CLK_EN);
         DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_SPI01_RST);
+    }
+#elif CONFIG_IDF_TARGET_ESP32S3
+    if (spi_num == FSPI) {
+        DPORT_SET_PERI_REG_MASK(SYSTEM_PERIP_CLK_EN0_REG, SYSTEM_SPI2_CLK_EN);
+        DPORT_CLEAR_PERI_REG_MASK(SYSTEM_PERIP_RST_EN0_REG, SYSTEM_SPI2_RST);
+    }
+    else if (spi_num == HSPI) {
+        DPORT_SET_PERI_REG_MASK(SYSTEM_PERIP_CLK_EN0_REG, SYSTEM_SPI3_CLK_EN);
+        DPORT_CLEAR_PERI_REG_MASK(SYSTEM_PERIP_RST_EN0_REG, SYSTEM_SPI3_RST);
+    }
+    else {
+        DPORT_SET_PERI_REG_MASK(SYSTEM_PERIP_CLK_EN0_REG, SYSTEM_SPI01_CLK_EN);
+        DPORT_CLEAR_PERI_REG_MASK(SYSTEM_PERIP_RST_EN0_REG, SYSTEM_SPI01_RST);
     }
 #elif CONFIG_IDF_TARGET_ESP32
     if(spi_num == HSPI) {
@@ -732,10 +745,10 @@ void spiWaitReady(spi_t * spi)
     while(spi->dev->cmd.usr);
 }
 
-#if CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
+#if CONFIG_IDF_TARGET_ESP32S2
 #define usr_mosi_dbitlen usr_mosi_bit_len
 #define usr_miso_dbitlen usr_miso_bit_len
-#elif CONFIG_IDF_TARGET_ESP32C3
+#elif CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32S3
 #define usr_mosi_dbitlen ms_data_bitlen
 #define usr_miso_dbitlen ms_data_bitlen
 #define mosi_dlen ms_dlen
@@ -1503,4 +1516,4 @@ uint32_t spiFrequencyToClockDiv(uint32_t freq)
     }
     return bestReg.value;
 }
-#endif /* ifndef CONFIG_IDF_TARGET_ESP32S3 */
+//#endif /* ifndef CONFIG_IDF_TARGET_ESP32S3 */
